@@ -27,7 +27,7 @@ const UI = {
 let config = {
     apiKey: localStorage.getItem('jarvis_apiKey') || '',
     proxyUrl: localStorage.getItem('jarvis_proxyUrl') || '',
-    model: localStorage.getItem('jarvis_model') || 'gemini-2.5-flash',
+    model: localStorage.getItem('jarvis_model') || 'models/gemini-1.5-flash',
     speak: localStorage.getItem('jarvis_speak') !== 'false',
     recogLang: localStorage.getItem('jarvis_recogLang') || 'en-IN',
     voiceUri: localStorage.getItem('jarvis_voiceUri') || ''
@@ -153,7 +153,7 @@ async function handleSend(text) {
         generationConfig: { maxOutputTokens: 250, temperature: 0.7 }
     };
 
-    let fetchUrl = config.proxyUrl || `https://generativelanguage.googleapis.com/v1beta/models/${config.model}:generateContent?key=${config.apiKey}`;
+    let fetchUrl = config.proxyUrl || `https://generativelanguage.googleapis.com/v1beta/${config.model}:generateContent?key=${config.apiKey}`;
 
     try {
         const response = await fetch(fetchUrl, {
@@ -229,13 +229,14 @@ function loadSettingsUI() {
     UI.modelInput.value = config.model;
     UI.voiceToggle.checked = config.speak;
     UI.recogLangSelect.value = config.recogLang;
+    UI.voiceUri = config.voiceUri;
     UI.modelBadge.innerText = config.model;
 }
 
 function saveSettings() {
     config.apiKey = UI.apiKeyInput.value.trim();
     config.proxyUrl = UI.proxyUrlInput.value.trim();
-    config.model = UI.modelInput.value.trim() || 'gemini-2.5-flash';
+    config.model = UI.modelInput.value.trim() || 'models/gemini-1.5-flash';
     config.speak = UI.voiceToggle.checked;
     config.recogLang = UI.recogLangSelect.value;
     config.voiceUri = UI.voiceSelect.value;
