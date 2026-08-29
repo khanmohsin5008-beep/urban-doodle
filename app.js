@@ -27,7 +27,7 @@ const UI = {
 let config = {
     apiKey: localStorage.getItem('jarvis_apiKey') || '',
     proxyUrl: localStorage.getItem('jarvis_proxyUrl') || '',
-    model: localStorage.getItem('jarvis_model') || 'gemini-1.5-flash',
+    model: localStorage.getItem('jarvis_model') || 'gemini-2.5-flash',
     speak: localStorage.getItem('jarvis_speak') !== 'false',
     recogLang: localStorage.getItem('jarvis_recogLang') || 'en-IN',
     voiceUri: localStorage.getItem('jarvis_voiceUri') || ''
@@ -52,6 +52,7 @@ function getSystemPrompt() {
     return `You are JARVIS, a highly intelligent personal AI assistant. 
 CREATOR & BOSS: Mohsin Khan.
 LOCATION: Chhatrapati Sambhajinagar, Maharashtra, India.
+CURRENT TIME: ${new Date().toLocaleString('en-IN')}.
 EXPERTISE: AI Content Creation, YouTube Shorts strategy, and Marvel universe.
 RULES: Address Mohsin as "Boss". Speak naturally in conversational Hinglish. Keep answers concise.`;
 }
@@ -142,7 +143,6 @@ async function handleSend(text) {
         return;
     }
 
-    // 🔥 Added System Prompt directly inside the first message to avoid 400 Bad Request Payload errors 🔥
     let currentHistory = JSON.parse(JSON.stringify(chatHistory));
     if (currentHistory.length > 0 && currentHistory[0].role === 'user') {
         currentHistory[0].parts[0].text = `[SYSTEM INSTRUCTION: ${getSystemPrompt()}]\n\nUser Message: ${currentHistory[0].parts[0].text}`;
@@ -163,7 +163,6 @@ async function handleSend(text) {
         });
 
         if (!response.ok) {
-            // 🔥 YAHAN ASLI ERROR PAKDA JAYEGA 🔥
             let errorMsg = "Unknown Error";
             try {
                 const errData = await response.json();
@@ -187,7 +186,6 @@ async function handleSend(text) {
         chatHistory.pop(); 
         localStorage.setItem('jarvis_history', JSON.stringify(chatHistory));
         
-        // 🔥 SCREEN PAR ASLI ERROR DIKHEGA 🔥
         appendMessage('model', `❌ Google Error: ${err.message}`);
         updateState('idle');
     }
@@ -237,7 +235,7 @@ function loadSettingsUI() {
 function saveSettings() {
     config.apiKey = UI.apiKeyInput.value.trim();
     config.proxyUrl = UI.proxyUrlInput.value.trim();
-    config.model = UI.modelInput.value.trim() || 'gemini-1.5-flash';
+    config.model = UI.modelInput.value.trim() || 'gemini-2.5-flash';
     config.speak = UI.voiceToggle.checked;
     config.recogLang = UI.recogLangSelect.value;
     config.voiceUri = UI.voiceSelect.value;
