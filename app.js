@@ -52,14 +52,8 @@ function getSystemPrompt() {
     return `You are JARVIS, a highly intelligent personal AI assistant. 
 CREATOR & BOSS: Mohsin Khan.
 LOCATION: Chhatrapati Sambhajinagar, Maharashtra, India.
-CURRENT TIME: ${new Date().toLocaleString('en-IN')}.
-EXPERTISE: AI Content Creation (Cinematic videos, 4K/8K, Goku/Anime concepts), YouTube Shorts strategy (CTR, AVD, viral hooks, SEO), and Marvel universe.
-RULES FOR REPLYING:
-1. Address Mohsin as "Boss", "Mohsin Boss", or "Mohsin".
-2. Speak naturally like a smart AI friend in conversational Hinglish. Understand imperfect dictation context.
-3. Keep normal answers concise (1-4 sentences) and extremely fast. Provide detailed scripts/prompts ONLY when specifically asked.
-4. Plain text only. NO markdown, NO asterisks, NO bullet points, NO complex tables. Output must be readable by TTS perfectly.
-5. Never pretend to be human. Maintain conversational context from history.`;
+EXPERTISE: AI Content Creation, YouTube Shorts strategy, and Marvel universe.
+RULES: Address Mohsin as "Boss". Speak naturally in conversational Hinglish. Keep answers concise.`;
 }
 
 function updateState(state, statusText = '') {
@@ -143,21 +137,23 @@ async function handleSend(text) {
     requestStartTime = Date.now();
     
     if (!config.apiKey && !config.proxyUrl) {
-        appendMessage('ai', "Boss, API key ya Proxy set nahi hai. Settings check karo.");
+        appendMessage('ai', "Boss, API key set nahi hai. Settings check karo.");
         updateState('idle');
         return;
     }
 
+    // 🔥 Added System Prompt directly inside the first message to avoid 400 Bad Request Payload errors 🔥
+    let currentHistory = JSON.parse(JSON.stringify(chatHistory));
+    if (currentHistory.length > 0 && currentHistory[0].role === 'user') {
+        currentHistory[0].parts[0].text = `[SYSTEM INSTRUCTION: ${getSystemPrompt()}]\n\nUser Message: ${currentHistory[0].parts[0].text}`;
+    }
+
     const payload = {
-        contents: chatHistory,
-        systemInstruction: { parts: [{ text: getSystemPrompt() }] }, // 🔥 BUG FIXED HERE (Array added) 🔥
+        contents: currentHistory,
         generationConfig: { maxOutputTokens: 250, temperature: 0.7 }
     };
 
-    let fetchUrl = config.proxyUrl;
-    if (!fetchUrl) {
-        fetchUrl = `https://generativelanguage.googleapis.com/v1beta/models/${config.model}:generateContent?key=${config.apiKey}`;
-    }
+    let fetchUrl = config.proxyUrl || `https://generativelanguage.googleapis.com/v1beta/models/${config.model}:generateContent?key=${config.apiKey}`;
 
     try {
         const response = await fetch(fetchUrl, {
@@ -167,9 +163,15 @@ async function handleSend(text) {
         });
 
         if (!response.ok) {
-            const errorDetails = await response.text();
-            console.error("Gemini API Error: ", errorDetails);
-            throw new Error("Server rejected request");
+            // 🔥 YAHAN ASLI ERROR PAKDA JAYEGA 🔥
+            let errorMsg = "Unknown Error";
+            try {
+                const errData = await response.json();
+                errorMsg = errData.error.message;
+            } catch(e) {
+                errorMsg = await response.text();
+            }
+            throw new Error(errorMsg);
         }
 
         const data = await response.json();
@@ -182,11 +184,11 @@ async function handleSend(text) {
 
     } catch (err) {
         console.error(err);
-        // If it fails, remove the last user message so history doesn't break
         chatHistory.pop(); 
         localStorage.setItem('jarvis_history', JSON.stringify(chatHistory));
         
-        appendMessage('model', "Connection error aa raha hai Boss. Network ya API key check karo.");
+        // 🔥 SCREEN PAR ASLI ERROR DIKHEGA 🔥
+        appendMessage('model', `❌ Google Error: ${err.message}`);
         updateState('idle');
     }
 }
